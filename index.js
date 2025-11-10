@@ -21,6 +21,15 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
+    const db =client.db('krishi-link')
+    const corpsColl=db.collection('corps')
+
+    // find or findOne
+    app.get('/corps',async(req,res)=>{
+        const result=await corpsColl.find().toArray()
+        res.send(result)
+    })
+
 
 
 
