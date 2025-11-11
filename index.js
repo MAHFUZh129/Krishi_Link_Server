@@ -6,7 +6,17 @@ app.use(cors())
 app.use(express.json())
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const admin = require("firebase-admin");
+
+const serviceAccount = require("./secretkey.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+
+
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = "mongodb+srv://krishi-link:TxVY3DfzUZ5EjOYX@cluster0.7gwzlnt.mongodb.net/?appName=Cluster0";
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -30,6 +40,55 @@ async function run() {
         res.send(result)
     })
 
+    app.get('/latest-corps',async(req,res)=>{
+        const result=await corpsColl.find().sort({
+             quantity:-1}).limit(6).toArray()
+        res.send(result)
+    })
+
+     app.get('/corps/:id',async(req,res)=>{
+        const {id}=req.params
+        const result=await corpsColl.findOne({_id:new ObjectId(id)})
+        res.send(result)
+    })
+
+    // update or updateOne
+    app.post('/interests',async(req,res)=>{
+         const { cropId, quantity, message } = req.body;
+          const userEmail = req.user.email
+
+          if (quantity < 1) return res.status(400).json({ error: "Quantity must be at least 1" });
+
+    const crop = await corpsColl.findOne({ _id: new ObjectId(cropId) });
+    if (!crop) return res.status(404).json({ error: "Crop not found" });
+
+    // Owner check
+    if (userEmail === crop.owner.ownerEmail) {
+      return res.status(400).json({ error: "Owner cannot send interest on own crop" });
+    }
+
+     // Prevent duplicate interest
+    const alreadySent = crop.interests?.some(i => i.userEmail === userEmail);
+    if (alreadySent) return res.status(400).json({ error: "Interest already sent" });
+
+    const interestId = new ObjectId();
+    const newInterest = {
+      _id: interestId,
+      cropId,
+      userEmail,
+      userName: req.user.name, // Logged-in user থেকে
+      quantity,
+      message,
+      status: "pending",
+    };
+    await corpsColl.updateOne(
+      { _id: new ObjectId(cropId) },
+      { $push: { interests: newInterest } }
+    );
+
+    res.status(201).json({ message: "Interest submitted successfully", interest: newInterest });
+  
+    })
 
 
 
