@@ -6,14 +6,6 @@ app.use(cors())
 app.use(express.json())
 
 
-const admin = require("firebase-admin");
-
-const serviceAccount = require("./secretkey.json");
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -27,6 +19,9 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
+
+
 
 async function run() {
   try {
@@ -55,19 +50,19 @@ async function run() {
     // update or updateOne
     app.post('/interests',async(req,res)=>{
          const { cropId, quantity, message } = req.body;
-          const userEmail = req.user.email
+          const userEmail = req.body.userEmail
 
           if (quantity < 1) return res.status(400).json({ error: "Quantity must be at least 1" });
 
     const crop = await corpsColl.findOne({ _id: new ObjectId(cropId) });
     if (!crop) return res.status(404).json({ error: "Crop not found" });
 
-    // Owner check
+    
     if (userEmail === crop.owner.ownerEmail) {
-      return res.status(400).json({ error: "Owner cannot send interest on own crop" });
+      return res.status(400).json({ error: "Owner cannot send interest on own crop" })
     }
 
-     // Prevent duplicate interest
+     
     const alreadySent = crop.interests?.some(i => i.userEmail === userEmail);
     if (alreadySent) return res.status(400).json({ error: "Interest already sent" });
 
@@ -76,7 +71,7 @@ async function run() {
       _id: interestId,
       cropId,
       userEmail,
-      userName: req.user.name, // Logged-in user থেকে
+      userName: req.body.userName, 
       quantity,
       message,
       status: "pending",
