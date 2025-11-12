@@ -47,6 +47,19 @@ async function run() {
         res.send(result)
     })
 
+    app.get("/search", async(req, res) => {
+      const search = req.query.search
+      const result = await corpsColl.find({name: {$regex: search, $options: "i"}}).toArray()
+      res.send(result)
+    })
+
+    app.get("/my-posts", async(req, res) => {
+      const email = req.query.email
+      const result = await corpsColl.find({ "owner.ownerEmail": email }).toArray()
+      res.send(result)
+    })
+
+
     // insert or insertOne
      app.post("/corps",   async (req, res) => {
       const data = req.body;
@@ -92,9 +105,32 @@ async function run() {
       { $push: { interests: newInterest } }
     );
 
-    res.status(201).json({ message: "Interest submitted successfully", interest: newInterest });
+    res.status(201).json({ message: "interest submitted successfully", interest: newInterest });
   
     })
+
+
+    
+app.put("/corps/:id", async (req, res) => {
+  const { id } = req.params;
+  const updateData = req.body;
+
+  try {
+    const result = await corpsColl.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ message: "Crop not found or no changes made" });
+    }
+
+    res.json({ success: true, message: "Crop updated successfully" });
+  } catch (error) {
+    console.error( error);
+    res.status(500).json({ message: "failed to update crop" })
+  }
+});
 
 
 
