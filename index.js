@@ -126,12 +126,30 @@ app.put("/corps/:id", async (req, res) => {
     }
 
     res.json({ success: true, message: "Crop updated successfully" });
-  } catch (error) {
+  } 
+  catch (error) {
     console.error( error);
     res.status(500).json({ message: "failed to update crop" })
   }
 });
 
+// delete or deleteOne
+app.delete("/corps/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await corpsColl.deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Crop not found" });
+    }
+
+    res.json({ success: true, message: "Crop deleted successfully" });
+  } catch (error) {
+    console.error("error deleting crop:", error);
+    res.status(500).json({ message: "Failed to delete crop" });
+  }
+});
 
 
 
