@@ -53,6 +53,31 @@ async function run() {
       res.send(result)
     })
 
+app.get("/my-interests", async (req, res) => {
+  const email = req.query.email;
+
+  const result = await corpsColl
+    .find({ "interests.userEmail": email })
+    .project({ name: 1, owner: 1, interests: 1 }) 
+    .toArray();
+
+  const filtred = result.flatMap((crop) =>
+    crop.interests
+      .filter((i) => i.userEmail === email)
+      .map((i) => ({
+        cropName: crop.name,
+        ownerName: crop.owner.ownerName,
+        ownerEmail: crop.owner.ownerEmail,
+        quantity: i.quantity,
+        message: i.message,
+        status: i.status,
+      }))
+  );
+
+  res.send(filtred)
+});
+
+
     app.get("/my-posts", async(req, res) => {
       const email = req.query.email
       const result = await corpsColl.find({ "owner.ownerEmail": email }).toArray()
@@ -76,7 +101,7 @@ async function run() {
          const { cropId, quantity, message } = req.body;
           const userEmail = req.body.userEmail
 
-          if (quantity < 1) return res.status(400).json({ error: "Quantity must be at least 1" });
+          if (quantity < 1) return res.status(400).json({ error: "Quantity must be at least 1" })
 
     const crop = await corpsColl.findOne({ _id: new ObjectId(cropId) });
     if (!crop) return res.status(404).json({ error: "Crop not found" });
@@ -88,7 +113,7 @@ async function run() {
 
      
     const alreadySent = crop.interests?.some(i => i.userEmail === userEmail);
-    if (alreadySent) return res.status(400).json({ error: "Interest already sent" });
+    if (alreadySent) return res.status(400).json({ error: "Interest already sent" })
 
     const interestId = new ObjectId();
     const newInterest = {
@@ -105,7 +130,7 @@ async function run() {
       { $push: { interests: newInterest } }
     );
 
-    res.status(201).json({ message: "interest submitted successfully", interest: newInterest });
+    res.status(201).json({ message: "interest submitted successfully", interest: newInterest })
   
     })
 
@@ -125,7 +150,7 @@ app.put("/corps/:id", async (req, res) => {
       return res.status(404).json({ message: "Crop not found or no changes made" });
     }
 
-    res.json({ success: true, message: "Crop updated successfully" });
+    res.json({ success: true, message: "Crop updated successfully" })
   } 
   catch (error) {
     console.error( error);
@@ -138,16 +163,16 @@ app.delete("/corps/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await corpsColl.deleteOne({ _id: new ObjectId(id) });
+    const result = await corpsColl.deleteOne({ _id: new ObjectId(id) })
 
     if (result.deletedCount === 0) {
-      return res.status(404).json({ message: "Crop not found" });
+      return res.status(404).json({ message: "Crop not found" })
     }
 
-    res.json({ success: true, message: "Crop deleted successfully" });
+    res.json({ success: true, message: "Crop deleted successfully" })
   } catch (error) {
-    console.error("error deleting crop:", error);
-    res.status(500).json({ message: "Failed to delete crop" });
+    console.error("error deleting crop:", error)
+    res.status(500).json({ message: "Failed to delete crop" })
   }
 });
 
