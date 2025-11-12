@@ -47,6 +47,17 @@ async function run() {
         res.send(result)
     })
 
+    // insert or insertOne
+     app.post("/corps",   async (req, res) => {
+      const data = req.body;
+      // console.log(data)
+      const result = await corpsColl.insertOne(data);
+      res.send({
+        success: true,
+        result,
+      });
+    });
+
     // update or updateOne
     app.post('/interests',async(req,res)=>{
          const { cropId, quantity, message } = req.body;
