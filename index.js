@@ -135,6 +135,52 @@ app.get("/my-interests", async (req, res) => {
     })
 
 
+    app.patch("/corps/:corpId/interests/:interestId", async (req, res) => {
+  const cropId = req.params.corpId;
+  const interestId = req.params.interestId;
+  const { status } = req.body; 
+
+
+  const crop = await corpsColl.findOne({ _id: new ObjectId(cropId) });
+
+  if (!crop) {
+    return res.send({ message: "corp not found" });
+  }
+
+  const interest = crop.interests.find(
+    (item) =>
+       item._id.toString() === interestId
+  );
+
+  if (!interest) {
+    return res.send({ message: "interset not found" })
+  }
+
+  interest.status = status;
+
+  if (status === "accepted") {
+    const quantityToReduce = parseInt(interest.quantity) || 0;
+    crop.quantity = crop.quantity - quantityToReduce;
+
+
+    if (crop.quantity < 0) crop.quantity = 0
+  }
+
+
+     await corpsColl.updateOne(
+    { _id: new ObjectId(cropId) },
+    {
+      $set: {
+
+
+        interests: crop.interests,
+        quantity: crop.quantity,
+      },
+    }
+  );
+
+  res.send({ message: `Interest ${status} succcessfully` });
+});
     
 app.put("/corps/:id", async (req, res) => {
   const { id } = req.params;
@@ -147,10 +193,10 @@ app.put("/corps/:id", async (req, res) => {
     );
 
     if (result.modifiedCount === 0) {
-      return res.status(404).json({ message: "Crop not found or no changes made" });
+      return res.status(404).json({ message: "corpp not found or no changes made" })
     }
 
-    res.json({ success: true, message: "Crop updated successfully" })
+    res.json({ success: true, message: "crop updated successfully" })
   } 
   catch (error) {
     console.error( error);
