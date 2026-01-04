@@ -2,7 +2,7 @@ const express = require('express')
 const cors = require('cors');
 require("dotenv").config()
 const app = express()
-const port = 3000
+const port = 5000
 app.use(cors())
 app.use(express.json())
 
@@ -31,14 +31,58 @@ async function run() {
     const corpsColl=db.collection('corps')
 
     // find or findOne
-    app.get('/corps',async(req,res)=>{
-        const result=await corpsColl.find().toArray()
-        res.send(result)
-    })
+    // app.get('/corps',async(req,res)=>{
+    //     const result=await corpsColl.find().toArray()
+    //     res.send(result)
+    // })
+    app.get("/corps", async (req, res) => {
+  try {
+    const { search, type, location, minPrice, maxPrice, sort } = req.query;
+
+    let query = {};
+
+    // name search
+    if (search) {
+      query.name = { $regex: search, $options: "i" };
+    }
+
+    // filters
+    if (type && type !== "all") {
+      query.type = type;
+    }
+
+    if (location && location !== "all") {
+      query.location = location;
+    }
+
+    // price Filter 
+    if (minPrice || maxPrice) {
+      query.pricePerUnit = {};
+      if (minPrice) query.pricePerUnit.$gte = Number(minPrice);
+      if (maxPrice) query.pricePerUnit.$lte = Number(maxPrice);
+    }
+
+    // sorting
+    let sortQuery = {};
+    if (sort === "price_asc") sortQuery.pricePerUnit = 1;
+    if (sort === "price_desc") sortQuery.pricePerUnit = -1;
+    if (sort === "latest") sortQuery._id = -1;
+
+    const result = await corpsColl
+      .find(query)
+      .sort(sortQuery)
+      .toArray();
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to getting crops" });
+  }
+});
+
 
     app.get('/latest-corps',async(req,res)=>{
         const result=await corpsColl.find().sort({
-             quantity:-1}).limit(6).toArray()
+             quantity:-1}).limit(8).toArray()
         res.send(result)
     })
 
