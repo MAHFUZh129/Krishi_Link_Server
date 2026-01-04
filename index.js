@@ -122,6 +122,23 @@ app.get("/my-interests", async (req, res) => {
   res.send(filtred)
 });
 
+// Dashboard overview stats
+app.get("/dashboard-overview", async (req, res) => {
+  const totalCrops = await corpsColl.countDocuments();
+  const totalQuantity = await corpsColl.aggregate([
+    { $group: { _id: null, total: { $sum: "$quantity" } } }
+  ]).toArray();
+
+  const categoryWise = await corpsColl.aggregate([
+    { $group: { _id: "$type", count: { $sum: 1 } } }
+  ]).toArray();
+
+  res.send({
+    totalCrops,
+    totalQuantity: totalQuantity[0]?.total || 0,
+    categoryWise,
+  });
+});
 
     app.get("/my-posts", async(req, res) => {
       const email = req.query.email
